@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>𝖥𝖴𝖩𝖨 𝖠𝖨 - 𝖫𝖫𝖬</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    .body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .messages-container {
+      padding: 15px;
+      overflow-y: auto;
+      flex: 1;
+      width: 100%;
+      max-height: calc(100vh - 60px); /* Adjusted height */
+      position: relative;
+    }
+
+    .message {
+      display: flex;
+      align-items: flex-end;
+      margin-bottom: 20px;
+    }
+
+    .user-message {
+      justify-content: flex-end;
+    }
+
+    .bot-message {
+      justify-content: flex-start;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      margin-right: 10px;
+    }
+
+    .avatar img {
+      width: 100%;
+      border-radius: 50%;
+    }
+
+    .message-content {
+      padding: 10px;
+      border-radius: 20px;
+      display: inline-block;
+      position: relative;
+      max-width: 70%;
+    }
+
+    .user-message-content {
+      background-color: #007bff;
+      color: #fff;
+    }
+
+    .bot-message-content {
+      background-color: #f0f0f0;
+      color: #333;
+    }
+
+    .timestamp {
+      font-size: 12px;
+      color: #666;
+      position: absolute;
+      bottom: -20px;
+      left: 0;
+    }
+
+    .input-container {
+      background-color: #fff;
+      border-top: 1px solid #ccc;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      width: 100%;
+      position: relative;
+      box-sizing: border-box;
+    }
+
+    .input-field {
+      flex: 1;
+      padding: 12px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      margin-right: 10px;
+      outline: none;
+    }
+
+    .send-button {
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 20px;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .send-button:hover {
+      background-color: #0056b3;
+    }
+
+    audio {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="body">
+    <div class="messages-container" id="messagesContainer"></div>
+  </div>
+
+  <div class="input-container">
+    <input type="text" id="userInput" class="input-field" placeholder="Type your message...">
+    <button onclick="sendMessage()" class="send-button">𝖲𝖾𝗇𝖽</button>
+  </div>
+
+  <audio id="userSound" src="https://files.catbox.moe/739y72.mp3"></audio>
+  <audio id="botSound" src="https://files.catbox.moe/dtja9q.mp3"></audio>
+
+  <script>
+    document.getElementById('userInput').addEventListener('keypress', function(event) {
+      if (event.key === 'Enter') {
+        sendMessage();
+      }
+    });
+
+    async function generateBotResponse(userInput) {
+      try {
+        const response = await fetch(`/meta/api?prompt=${encodeURIComponent(userInput)}`);
+        const responseData = await response.json();
+
+        if (response.ok) {
+          const botMessage = responseData.response;
+          await typeMessage('bot', botMessage);
+          document.getElementById('botSound').play(); 
+        } else {
+          throw new Error('Error generating response');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        appendMessage('bot', 'Internal server error. Please try again later.');
+        document.getElementById('botSound').play(); 
+      }
+    }
+
+    async function typeMessage(sender, message) {
+      const delay = 1;
+      const messageContent = document.createElement('div');
+      messageContent.classList.add('message-content', `${sender}-message-content`);
+      const avatar = `<div class="avatar"><img src="${sender === 'user' ? 'https://i.imgur.com/XsHHOvC.jpeg' : 'https://i.imgur.com/jkPshPS.jpeg'}" alt="${sender === 'user' ? 'User Avatar' : 'Bot Avatar'}"></div>`;
+      const timestamp = `<span class="timestamp">${getFormattedTimestamp()}</span>`;
+      const text = '<div class="text"></div>';
+      messageContent.innerHTML = `${avatar}${timestamp}${text}`;
+      const messagesContainer = document.getElementById('messagesContainer');
+      messagesContainer.appendChild(messageContent);
+      const textElement = messageContent.querySelector('.text');
+
+      const soundElement = document.getElementById(`${sender}Sound`);
+      soundElement.play(); 
+
+      for (let i = 0; i < message.length; i++) {
+        await sleep(delay);
+        textElement.textContent += message[i];
+        scrollToBottom(messagesContainer);
+      }
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function appendMessage(sender, message) {
+      const messagesContainer = document.getElementById('messagesContainer');
+      const messageElement = document.createElement('div');
+      messageElement.classList.add('message', sender === 'user' ? 'user-message' : 'bot-message');
+      messageElement.innerHTML = `
+        <div class="avatar"><img src="${sender === 'user' ? 'https://i.imgur.com/XsHHOvC.jpeg' : 'https://i.imgur.com/jkPshPS.jpeg'}" alt="${sender === 'user' ? 'User Avatar' : 'Bot Avatar'}"></div>
+        <div class="message-content ${sender}-message-content">
+          <span class="timestamp">${getFormattedTimestamp()}</span>
+          <div class="text">${message}</div>
+        </div>
+      `;
+      messagesContainer.appendChild(messageElement);
+      scrollToBottom(messagesContainer);
+
+      const soundElement = document.getElementById(`${sender}Sound`);
+      soundElement.play();
+    }
+
+    function scrollToBottom(element) {
+      element.scrollTop = element.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const userInput = document.getElementById('userInput').value.trim();
+      if (!userInput) {
+        return;
+      }
+
+      const messagesContainer = document.getElementById('messagesContainer');
+
+      appendMessage('user', userInput);
+
+      document.getElementById('userInput').value = '';
+
+      await generateBotResponse(userInput);
+    }
+
+    function getFormattedTimestamp() {
+      const now = new Date();
+      let hours = now.getHours();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12 || 12;
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      return `${hours}:${minutes} ${ampm}`;
+    }
+
+    removeChatHeader();
+  </script>
+</body>
+</html>
