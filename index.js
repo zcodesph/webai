@@ -7,10 +7,10 @@ const PORT = process.env.PORT || 8080;
 
 const CODE_LLAMA_URL = 'https://api.deepinfra.com/v1/inference/meta-llama/Llama-2-70b-chat-hf';
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(__dirname));
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.get('/meta/api', async (req, res) => {
@@ -18,7 +18,7 @@ app.get('/meta/api', async (req, res) => {
     const inputText = req.query.prompt;
 
     const params = {
-      input: `[INST] ${inputText} [/INST]`,
+      input: [INST] ${inputText} [/INST],
       max_new_tokens: 1024,
       temperature: 0.4,
       top_p: 0.9,
@@ -33,11 +33,7 @@ app.get('/meta/api', async (req, res) => {
       'Authorization': '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' 
     };
 
-    console.log('Request to Meta Llama API:', params); 
-
     const response = await axios.post(CODE_LLAMA_URL, params, { headers });
-
-    console.log('Response from Meta Llama API:', response.data); 
 
     if (response.status === 200) {
       const result = response.data;
@@ -65,5 +61,5 @@ app.get('/meta/api', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(Server is running on port ${PORT});
 });
